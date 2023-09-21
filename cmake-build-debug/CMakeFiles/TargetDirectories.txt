@@ -1,0 +1,3 @@
+C:/Users/kofta/CLionProjects/NeuronNetwork/cmake-build-debug/CMakeFiles/NeuronNetwork.dir
+C:/Users/kofta/CLionProjects/NeuronNetwork/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/kofta/CLionProjects/NeuronNetwork/cmake-build-debug/CMakeFiles/rebuild_cache.dir
