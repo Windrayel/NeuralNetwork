@@ -3,10 +3,10 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include "EasyBmp/EasyBMP.h"
 
 int main() {
     double targetArray[150][3] = {0};
-
     std::ifstream inputFile;
     inputFile.open(R"(C:\Users\kofta\CLionProjects\NeuronNetwork\target.csv)");
 
@@ -33,6 +33,17 @@ int main() {
     double wInput[i][j]; // input weights
     double wInside[k-1][i][i]; // inside weights
     double wOutput[3][i]; // output weights
+
+    BMP inputImage;
+    inputImage.ReadFromFile(R"(C:\Users\kofta\CLionProjects\NeuronNetwork\Images\0.bmp)");
+
+    for (int i1 = 0; i1 < 49; i1++) {
+        int temp = inputImage(i1%7, i1/7)->Blue;
+        temp == 0 ? input[i1] = 1 : input[i1] = 0;
+        std::cout << input[i1] << " ";
+        if (i1%7 == 6)
+            std::cout << std::endl;
+    }
 
     // assign start values of weights
     for (int i1 = 0; i1 < i; i1++) {
@@ -101,7 +112,7 @@ int main() {
         for (int j1 = 0; j1 < 3; j1++) {
             sum += deltaOut[j1] * wOutput[j1][i1];
         }
-        deltaIns[k-1][i1] = output[i1] * (1 - output[i1]) * sum;
+        deltaIns[k-1][i1] = neuron[k-1][i1] * (1 - neuron[k-1][i1]) * sum;
     }
 
     for (int k1 = k-1; k1 > 0; k1--) {
@@ -110,7 +121,7 @@ int main() {
             for (int j1 = 0; j1 < i; j1++) {
                 sum += deltaIns[k1][j1] * wInside[k1-1][j1][i1];
             }
-            deltaIns[k1-1][i1] = neuron[k1][i1] * (1 - neuron[k1][i1]) * sum;
+            deltaIns[k1-1][i1] = neuron[k1-1][i1] * (1 - neuron[k1-1][i1]) * sum;
         }
     }
 
@@ -136,6 +147,6 @@ int main() {
 
 
 //    input[0] = 1;
-    std::cout << targetArray[0][0] << std::endl;
+//    std::cout << targetArray[0][0] << std::endl;
     return 0;
 }
