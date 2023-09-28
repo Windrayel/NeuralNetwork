@@ -22,38 +22,52 @@ int main() {
         }
         lineNumber++;
     }
-
-    double input[49] = {0};
-    double output[3] = {0};
-
-    const int k = 5; // layer quantity
+    int k = 5; // inside layer quantity
     int i = 10; // neuron quantity
     int j = 49; // input quantity
 
-    double w[k][i][j]; // weights
+    double input[49] = {0};
+    double neuron[k][i]; // hidden neurons value
+    double output[3] = {0};
 
-    for (int i1 = 0; i1 < k; i1++)
-        for (int i2 = 0; i2 < i; i2++)
-            for (int i3 = 0; i3 < j; i3++) {
-                w[i1][i2][i3] = (double) rand() / RAND_MAX;
-//                std::cout << w[i1][i2][i3] << std::endl;
+    double wInput[i][j]; // input weights
+    double wInside[k-1][i][i]; // inside weights
+    double wOutput[3][i]; // output weights
+
+    // assign start values of weights
+    for (int i1 = 0; i1 < i; i1++) {
+        for (int j1 = 0; j1 < j; j1++) {
+            wInput[i1][j1] = (double) rand() / RAND_MAX;
+        }
+    }
+
+    for (int k1 = 0; k1 < k; k1++) {
+        for (int i1 = 0; i1 < i; i1++) {
+            for (int i2 = 0; i2 < i; i2++) {
+                wInside[k1][i1][i2] = (double) rand() / RAND_MAX;
             }
+        }
+    }
 
-    double neuron[k][i]; // neurons value
+    for (int i1 = 0; i1 < 3; i1++) {
+        for (int j1 = 0; j1 < i; j1++) {
+            wOutput[i1][j1] = (double) rand() / RAND_MAX;
+        }
+    }
 
     for (int i1 = 0; i1 < i; i1++) {
         double sum = 0;
         for (int j1 = 0; j1 < j; j1++) {
-            sum += input[j1] * w[0][i1][j1];
+            sum += input[j1] * wInput[i1][j1];
         }
         neuron[0][i1] = 1 / (1 + exp(-sum));
     }
 
-    for (int k1 = 1; k1 < k - 1; k1++) {
+    for (int k1 = 1; k1 < k; k1++) {
         for (int i1 = 0; i1 < i; i1++) {
             double sum = 0;
             for (int i2 = 0; i2 < i; i2++) {
-                sum += neuron[k1-1][i2] * w[k1][i1][i2];
+                sum += neuron[k1-1][i2] * wInside[k1-1][i1][i2];
             }
             neuron[k1][i1] = 1 / (1 + exp(-sum));
         }
@@ -62,7 +76,7 @@ int main() {
     for (int i1 = 0; i1 < 3; i1++) {
         double sum = 0;
         for (int i2 = 0; i2 < i; i2++) {
-            sum += neuron[k-1][i2] * w[k-1][i1][i2];
+            sum += neuron[k-1][i2] * wOutput[i1][i2];
         }
         output[i1] = 1 / (1 + exp(-sum));
     }
@@ -82,40 +96,41 @@ int main() {
 
     double deltaIns[k][i];
 
-    for (int i1 = 0; i1 < 3; i1++) {
+    for (int i1 = 0; i1 < i; i1++) {
         double sum = 0;
         for (int j1 = 0; j1 < 3; j1++) {
-            sum += deltaOut[j1] * w[k-1][j1][i1];
+            sum += deltaOut[j1] * wOutput[j1][i1];
         }
-        deltaIns[k-1][i1] = neuron[k-1][i1] * (1 - neuron[k-1][i1]) * sum;
+        deltaIns[k-1][i1] = output[i1] * (1 - output[i1]) * sum;
     }
 
-    for (int k1 = k-2; k1 >= 0; k1--) {
+    for (int k1 = k-1; k1 > 0; k1--) {
         for (int i1 = 0; i1 < i; i1++) {
             double sum = 0;
             for (int j1 = 0; j1 < i; j1++) {
-                sum += deltaIns[k1+1][j1] * w[k1+1][j1][i1];
+                sum += deltaIns[k1][j1] * wInside[k1-1][j1][i1];
             }
-            deltaIns[k1][i1] = neuron[k1][i1] * (1 - neuron[k1][i1]) * sum;
+            deltaIns[k1-1][i1] = neuron[k1][i1] * (1 - neuron[k1][i1]) * sum;
         }
     }
 
-    // Получается 0, что-то не так
-//    for (int i1 = 0; i1 < j; i1++) {
-//        double sum = 0;
-//        for (int j1 = 0; j1 < i; j1++) {
-//            sum += deltaIns[1][j1] * w[1][j1][i1];
-//        }
-//        deltaIns[0][i1] = input[i1] * (1 - input[i1]);
-//    }
-    double deltaW[k][i][j];
+    for (int i1 = 0; i1 < i; i1++) {
+        for (int j1 = 0; j1 < 3; j1++) {
+            wOutput[j1][i1] += alpha * deltaOut[j1] * neuron[k-1][i1];
+        }
+    }
 
-    for (int k1 = 0; k1 < k - 1; k1--) {
+    for (int k1 = k-1; k1 > 0; k1--) {
         for (int i1 = 0; i1 < i; i1++) {
             for (int j1 = 0; j1 < i; j1++) {
-                deltaW[k1][i1][j1] = alpha * deltaIns[k1][i1] * neuron[k1][j1];
-                w[k1][i1][j1] += deltaW[k1][i1][j1];
+                wInside[k1-1][i1][j1] += alpha * deltaIns[k1][i1] * neuron[k1-1][j1];
             }
+        }
+    }
+
+    for (int i1 = 0; i1 < i; i1++) {
+        for (int j1 = 0; j1 < j; j1++) {
+            wInput[i1][j1] += alpha * deltaIns[0][i1] * input[j1];
         }
     }
 
