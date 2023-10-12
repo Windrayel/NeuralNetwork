@@ -5,26 +5,12 @@
 #include <sstream>
 #include "EasyBmp/EasyBMP.h"
 
-int main() {
+class Network {
     double targetArray[150][3] = {0};
-    std::ifstream inputFile;
-    inputFile.open("/home/kostya/CLionProjects/NeuralNetwork/target.csv");
 
-    std::string line;
-    int lineNumber = 0;
-    while (std::getline(inputFile, line)) {
-        std::string tempStr;
-
-        std::stringstream inputString(line);
-        for (int i = 0; i < 3; i++) {
-            std::getline(inputString, tempStr, ',');
-            targetArray[lineNumber][i] = std::stoi(tempStr);
-        }
-        lineNumber++;
-    }
-    int k = 5; // inside layer quantity
-    int i = 10; // neuron quantity
-    int j = 49; // input quantity
+    static const int k = 5; // inside layer quantity
+    static const int i = 10; // neuron quantity
+    static const int j = 49; // input quantity
 
     double input[49] = {0};
     double neuron[k][i]; // hidden neurons value
@@ -38,36 +24,61 @@ int main() {
     double errorFun = 1;
     int epoch = 0;
 
-    // assign start values of weights
-    for (int i1 = 0; i1 < i; i1++) {
-        for (int j1 = 0; j1 < j; j1++) {
-            wInput[i1][j1] = (double) rand() / RAND_MAX;
-//            wInput[i1][j1] = 0.3;
+    public:
+    void init_target() {
+        std::ifstream inputFile(R"(C:\Users\kofta\CLionProjects\NeuronNetwork\target.csv)");
+
+        std::string line;
+        int lineNumber = 0;
+        while (std::getline(inputFile, line)) {
+            std::string tempStr;
+
+            std::stringstream inputString(line);
+            for (int i1 = 0; i1 < 3; i1++) {
+                std::getline(inputString, tempStr, ',');
+                targetArray[lineNumber][i1] = std::stod(tempStr);
+            }
+            lineNumber++;
         }
     }
 
-    for (int k1 = 0; k1 < k; k1++) {
-        for (int i1 = 0; i1 < i; i1++) {
-            for (int i2 = 0; i2 < i; i2++) {
-                wInside[k1][i1][i2] = (double) rand() / RAND_MAX;
+    void init_weights(){
+        for (auto & i1 : wInput) {
+            for (double & j1 : i1) {
+                if (rand() % 2)
+                    j1 = (double) rand() / RAND_MAX;
+                else
+                    j1 = -(double) rand() / RAND_MAX;
+//            wInput[i1][j1] = 0.3;
+            }
+        }
+
+        for (auto & k1 : wInside) {
+            for (auto & i1 : k1) {
+                for (double & i2 : i1) {
+                    if (rand() % 2)
+                        i2 = (double) rand() / RAND_MAX;
+                    else
+                        i2 = -(double) rand() / RAND_MAX;
 //                wInside[k1][i1][i2] = 0.3;
+                }
+            }
+        }
+
+        for (auto & i1 : wOutput) {
+            for (double & j1 : i1) {
+                if (rand() % 2)
+                    j1 = (double) rand() / RAND_MAX;
+                else
+                    j1 = -(double) rand() / RAND_MAX;
+//            wOutput[i1][j1] = 0.3;
             }
         }
     }
 
-    for (int i1 = 0; i1 < 3; i1++) {
-        for (int j1 = 0; j1 < i; j1++) {
-            wOutput[i1][j1] = (double) rand() / RAND_MAX;
-//            wOutput[i1][j1] = 0.3;
-        }
-    }
-
-
-    // learning
-
-    while ((errorFun > 0.1 || errorFun < -0.1)  && epoch < 1000) {
+    void evaluate(int picture_number) {
         BMP inputImage;
-        std::string fileName = "/home/kostya/CLionProjects/NeuralNetwork/Images/" + std::to_string(epoch % 150) + ".bmp";
+        std::string fileName = R"(C:\Users\kofta\CLionProjects\NeuronNetwork\Images\)" + std::to_string(picture_number) + ".bmp";
         inputImage.ReadFromFile(fileName.c_str());
 
         for (int i1 = 0; i1 < 49; i1++) {
@@ -104,66 +115,89 @@ int main() {
             }
             output[i1] = 1 / (1 + exp(-sum));
         }
-
-        double difSum = 0;
-        for (int i1 = 0; i1 < 3; i1++) {
-            difSum += targetArray[epoch % 150][i1] - output[i1];
-        }
-
-        errorFun = difSum / 2;
-
-        double deltaOut[3] = {0};
-
-        for (int i1 = 0; i1 < 3; i1++) {
-            deltaOut[i1] = output[i1] * (1 - output[i1]) * (targetArray[epoch % 150][i1]);
-        }
-
-        double deltaIns[k][i];
-
-        for (int i1 = 0; i1 < i; i1++) {
-            double sum = 0;
-            for (int j1 = 0; j1 < 3; j1++) {
-                sum += deltaOut[j1] * wOutput[j1][i1];
-            }
-            deltaIns[k - 1][i1] = neuron[k - 1][i1] * (1 - neuron[k - 1][i1]) * sum;
-        }
-
-        for (int k1 = k - 1; k1 > 0; k1--) {
-            for (int i1 = 0; i1 < i; i1++) {
-                double sum = 0;
-                for (int j1 = 0; j1 < i; j1++) {
-                    sum += deltaIns[k1][j1] * wInside[k1 - 1][j1][i1];
-                }
-                deltaIns[k1 - 1][i1] = neuron[k1-1][i1] * (1 - neuron[k1-1][i1]) * sum;
-            }
-        }
-
-        for (int i1 = 0; i1 < i; i1++) {
-            for (int j1 = 0; j1 < 3; j1++) {
-                wOutput[j1][i1] += alpha * deltaOut[j1] * neuron[k-1][i1];
-            }
-        }
-
-        for (int k1 = k - 1; k1 > 0; k1--) {
-            for (int i1 = 0; i1 < i; i1++) {
-                for (int j1 = 0; j1 < i; j1++) {
-                    wInside[k1 - 1][i1][j1] += alpha * deltaIns[k1][i1] * neuron[k1-1][j1];
-                }
-            }
-        }
-
-        for (int i1 = 0; i1 < i; i1++) {
-            for (int j1 = 0; j1 < j; j1++) {
-                wInput[i1][j1] += alpha * deltaIns[0][i1] * input[j1];
-            }
-        }
-        std::cout << epoch << std::endl;
-        std::cout << output[0] << " " << output[1] << " " << output[2] << " " << std::endl;
-        std::cout << errorFun << std::endl;
-        epoch++;
     }
 
-//    input[0] = 1;
-//    std::cout << targetArray[0][0] << std::endl;
+    void learn(int epoch_max) {
+        epoch = 0;
+        for (epoch = 0; epoch < epoch_max; epoch++) {
+//            if (epoch % 10 > 3)
+                evaluate(epoch % 150);
+//            else
+//                continue;
+
+            double difSum = 0;
+            for (int i1 = 0; i1 < 3; i1++) {
+                difSum += std::abs(targetArray[epoch % 150][i1] - output[i1]);
+            }
+
+            errorFun = difSum / 2;
+
+            double deltaOut[3] = {0};
+
+            for (int i1 = 0; i1 < 3; i1++) {
+                deltaOut[i1] = output[i1] * (1 - output[i1]) * (targetArray[epoch % 150][i1] - output[i1]);
+            }
+
+            double deltaIns[k][i];
+
+            for (int i1 = 0; i1 < i; i1++) {
+                double sum = 0;
+                for (int j1 = 0; j1 < 3; j1++) {
+                    sum += deltaOut[j1] * wOutput[j1][i1];
+                }
+                deltaIns[k - 1][i1] = neuron[k - 1][i1] * (1 - neuron[k - 1][i1]) * sum;
+            }
+
+            for (int k1 = k - 1; k1 > 0; k1--) {
+                for (int i1 = 0; i1 < i; i1++) {
+                    double sum = 0;
+                    for (int j1 = 0; j1 < i; j1++) {
+                        sum += deltaIns[k1][j1] * wInside[k1 - 1][j1][i1];
+                    }
+                    deltaIns[k1 - 1][i1] = neuron[k1-1][i1] * (1 - neuron[k1-1][i1]) * sum;
+                }
+            }
+
+            for (int i1 = 0; i1 < i; i1++) {
+                for (int j1 = 0; j1 < 3; j1++) {
+                    wOutput[j1][i1] += alpha * deltaOut[j1] * neuron[k-1][i1];
+                }
+            }
+
+            for (int k1 = k - 1; k1 > 0; k1--) {
+                for (int i1 = 0; i1 < i; i1++) {
+                    for (int j1 = 0; j1 < i; j1++) {
+                        wInside[k1 - 1][i1][j1] += alpha * deltaIns[k1][i1] * neuron[k1-1][j1];
+                    }
+                }
+            }
+
+            for (int i1 = 0; i1 < i; i1++) {
+                for (int j1 = 0; j1 < j; j1++) {
+                    wInput[i1][j1] += alpha * deltaIns[0][i1] * input[j1];
+                }
+            }
+//        std::cout << epoch << std::endl;
+//        std::cout << output[0] << " " << output[1] << " " << output[2] << " " << std::endl;
+//        std::cout << errorFun << std::endl;
+        }
+    }
+
+    void print_output() {
+        for (double i1 : output) {
+            std::cout << i1 << " ";
+        }
+        std::cout << std::endl << errorFun;
+    }
+};
+
+int main() {
+    Network network;
+    network.init_target();
+    network.init_weights();
+    network.learn(25000);
+    network.evaluate(140);
+    network.print_output();
+
     return 0;
 }
